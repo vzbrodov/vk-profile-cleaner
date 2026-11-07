@@ -1,6 +1,6 @@
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QMessageBox
-from vk_cleaner.gui.app import Window
+from vk_cleaner.gui.app import Window, apply_theme
 
 
 def test_demo_flow(qtbot, monkeypatch):
@@ -25,3 +25,14 @@ def test_demo_flow(qtbot, monkeypatch):
     qtbot.mouseClick(window.next, Qt.LeftButton)
     qtbot.waitUntil(lambda: window.step == 'dialogs' and not window.busy)
     assert 'confirmed' in window.log.toPlainText()
+
+
+def test_token_is_immediately_masked_with_stars(qtbot, qapp):
+    apply_theme(qapp)
+    window = Window(demo=True)
+    qtbot.addWidget(window)
+    window.show()
+    window.token.setFocus()
+    qtbot.keyClicks(window.token, 'private-token-123')
+    assert window.token.displayText() == '*' * len('private-token-123')
+    assert window.token.text() == 'private-token-123'

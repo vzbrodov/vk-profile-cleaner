@@ -10,12 +10,31 @@ from platformdirs import user_data_path
 from PySide6.QtCore import Qt, QObject, Signal, QRunnable, QThreadPool, QAbstractTableModel, QModelIndex, QSortFilterProxyModel, QTimer
 from PySide6.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
     QLabel, QLineEdit, QPushButton, QTableView, QDateEdit, QMessageBox, QFileDialog,
-    QPlainTextEdit, QHeaderView, QCheckBox, QProgressBar)
+    QPlainTextEdit, QHeaderView, QCheckBox, QProgressBar, QGroupBox, QProxyStyle, QStyle, QStyleFactory)
 from ..core.api import ApiClient
 from ..core.demo import DemoApi
 from ..core.models import DateRange, CleanerError
 from ..core import services
 from ..storage.database import Database
+
+
+class PasswordStyle(QProxyStyle):
+    def styleHint(self, hint, option=None, widget=None, returnData=None):
+        if hint == QStyle.SH_LineEdit_PasswordCharacter:
+            return ord('*')
+        if hint == QStyle.SH_LineEdit_PasswordMaskDelay:
+            return 0
+        return super().styleHint(hint, option, widget, returnData)
+
+
+class TokenField(QLineEdit):
+    def __init__(self):
+        super().__init__()
+        style = PasswordStyle(QStyleFactory.create('Fusion'))
+        style.setParent(self)
+        self.setStyle(style)
+        self.setEchoMode(QLineEdit.Password)
+        self.setAccessibleName('Пользовательский токен VK, скрытый ввод')
 
 
 class Signals(QObject):
@@ -85,7 +104,8 @@ class Window(QMainWindow):
     def __init__(self, demo=False):
         super().__init__()
         self.setWindowTitle('VK Cleaner — мастер очистки' + (' [ДЕМОНСТРАЦИЯ]' if demo else ''))
-        self.resize(1040, 740)
+        self.resize(1120, 780)
+        self.setMinimumSize(980, 700)
         self.demo = demo
         self.temp = tempfile.TemporaryDirectory() if demo else None
         self.path = Path(self.temp.name if demo else user_data_path('vk-cleaner')) / 'cleaner.sqlite3'
@@ -97,25 +117,35 @@ class Window(QMainWindow):
         panel = QWidget()
         self.setCentralWidget(panel)
         layout = QVBoxLayout(panel)
-        mast = QLabel('VK CLEANER   /   Личная переписка')
+        mast = QLabel('VK Cleaner')
         mast.setObjectName('mast')
+        layout.setContentsMargins(18, 14, 18, 14)
+        layout.setSpacing(10)
         layout.addWidget(mast)
+        subtitle = QLabel('Очистка своих сообщений · локально на вашем компьютере')
+        subtitle.setObjectName('subtitle')
+        layout.addWidget(subtitle)
         self.description = QLabel('1. Вход  →  2. Диалоги и период  →  3. Проверка  →  4. Результат')
         layout.addWidget(self.description)
+        account_group = QGroupBox('Подключение к ВКонтакте')
+        account_layout = QVBoxLayout(account_group)
+        layout.addWidget(account_group)
         auth = QHBoxLayout()
-        self.token = QLineEdit()
+        auth.addWidget(QLabel('Токен:'))
+        self.token = TokenField()
         self.token.setPlaceholderText('Пользовательский токен VK')
         self.token.setEchoMode(QLineEdit.Password)
         auth.addWidget(self.token)
         self.login = QPushButton('Войти' if not demo else 'Открыть демонстрацию')
         self.login.clicked.connect(self.authenticate)
         auth.addWidget(self.login)
-        layout.addLayout(auth)
+        account_layout.addLayout(auth)
         security = QHBoxLayout()
         self.remember = QCheckBox('Запомнить токен в системном хранилище')
-        security.addWidget(self.remember)
+        account_layout.addWidget(self.remember)
         logout = QPushButton('Выйти')
         logout.clicked.connect(self.logout)
+        security.addStretch(1)
         security.addWidget(logout)
         forget = QPushButton('Удалить сохранённый токен')
         forget.clicked.connect(self.forget_token)
@@ -125,9 +155,9 @@ class Window(QMainWindow):
         security.addWidget(restore)
         self.restore_button = restore
         self.logout_button, self.forget_button = logout, forget
-        layout.addLayout(security)
+        account_layout.addLayout(security)
         self.account_label = QLabel('Токен используется только в текущем сеансе.')
-        layout.addWidget(self.account_label)
+        account_layout.addWidget(self.account_label)
         tools = QHBoxLayout()
         self.search = QLineEdit()
         self.search.setPlaceholderText('Поиск в списке…')
@@ -166,6 +196,7 @@ class Window(QMainWindow):
         self.export.clicked.connect(self.export_csv)
         buttons.addWidget(self.export)
         self.next = QPushButton('Анализировать')
+        self.next.setObjectName('primary')
         self.next.clicked.connect(self.advance)
         buttons.addWidget(self.next)
         self.resume = QPushButton('Продолжить задание')
@@ -179,8 +210,10 @@ class Window(QMainWindow):
         self.log.setReadOnly(True)
         self.log.setMaximumBlockCount(1000)
         self.log.setMaximumHeight(125)
+        layout.addWidget(QLabel('Журнал выполнения'))
         layout.addWidget(self.log)
         self.progress = QProgressBar()
+        self.progress.setValue(0)
         layout.addWidget(self.progress)
         self.cancel = QPushButton('Отменить операцию')
         self.cancel.clicked.connect(self.stop)
@@ -477,17 +510,28 @@ def main():
 
 def apply_theme(app):
     app.setStyle('Fusion')
-    app.setStyleSheet('''
-    QWidget { font-family: "DejaVu Sans"; font-size: 12px; color: #202b38; }
-    QMainWindow { background: #d7d5cc; }
-    QLabel#mast { background: #355774; color: white; padding: 16px; font-size: 20px; font-weight: bold; }
-    QPushButton { background: #e7e5dd; border: 1px solid #7f8586; border-top: 2px solid white; border-left: 2px solid white; padding: 7px 12px; }
-    QPushButton:pressed { border: 2px inset #7f8586; background: #cccac1; }
-    QPushButton:disabled { color: #888; }
-    QLineEdit, QDateEdit, QPlainTextEdit { background: #fffef8; border: 1px solid #858d91; padding: 5px; }
-    QTableView { background: #fffef8; alternate-background-color: #edf1f2; gridline-color: #ccd1d4; selection-background-color: #355774; selection-color: white; }
-    QHeaderView::section { background: #d7dfe3; border: 1px solid #a5afb4; padding: 7px; }
-    ''')
+    app.setStyleSheet("""
+    QWidget { font-family: "DejaVu Sans"; font-size: 12px; color: #243446; }
+    QMainWindow { background: #e7e8e4; }
+    QLabel#mast { color: #294b69; font-size: 24px; font-weight: bold; }
+    QLabel#subtitle { color: #526476; padding-bottom: 4px; }
+    QGroupBox { background: #eff0ec; border: 1px solid #a7b2b8; margin-top: 10px; padding: 12px 10px 8px; }
+    QGroupBox::title { subcontrol-origin: margin; left: 12px; padding: 0 5px; color: #355774; }
+    QPushButton { background: #e9ecec; border: 1px solid #8d9ca5; border-top: 1px solid white; border-left: 1px solid white; padding: 7px 10px; min-height: 16px; }
+    QPushButton:hover { background: #f4f7f8; border-color: #587b96; }
+    QPushButton:pressed { background: #ccd7dd; border: 1px solid #587b96; }
+    QPushButton:focus { outline: 1px dotted #294b69; }
+    QPushButton#primary { background: #355e7c; color: white; border: 1px solid #26465f; font-weight: bold; }
+    QPushButton#primary:hover { background: #426f90; }
+    QPushButton:disabled, QPushButton#primary:disabled { background: #e2e5e3; color: #818a8c; border-color: #bac1c2; }
+    QLineEdit, QDateEdit { background: #fff; border: 1px solid #97a8b2; padding: 5px; min-height: 18px; }
+    QLineEdit:focus, QDateEdit:focus { border: 1px solid #355e7c; }
+    QPlainTextEdit { background: #f5f7f3; border: 1px solid #a3b0b6; font-family: "DejaVu Sans Mono"; font-size: 11px; }
+    QTableView { background: #fff; alternate-background-color: #f0f4f6; gridline-color: #d6dfe3; border: 1px solid #97a8b2; selection-background-color: #355e7c; selection-color: white; }
+    QHeaderView::section { background: #dce4e9; border: 0; border-right: 1px solid #bccbd3; border-bottom: 1px solid #a6bac6; padding: 8px; color: #294b69; }
+    QProgressBar { background: #f5f7f3; border: 1px solid #a3b0b6; height: 16px; text-align: center; }
+    QProgressBar::chunk { background: #89a3b5; }
+    """)
 
 
 if __name__ == '__main__':
