@@ -4,7 +4,7 @@
 
 ```bash
 make setup
-.venv/bin/vk-cleaner-cli --help
+.venv/bin/vk-profile-cleaner-cli --help
 ```
 
 CLI использует то же ядро и базу, что и GUI. Токен вводится скрыто в терминале;
@@ -16,7 +16,7 @@ GUI перед запуском удаления через CLI.
 Один диалог:
 
 ```bash
-.venv/bin/vk-cleaner-cli scan --peer-id 123456 --date-from 2024-01-01 --date-to 2024-12-31 --dry-run
+.venv/bin/vk-profile-cleaner-cli scan --peer-id 123456 --date-from 2024-01-01 --date-to 2024-12-31 --dry-run
 ```
 
 Несколько — повторите `--peer-id`. Для всех доступных диалогов используйте `--all`.
@@ -24,7 +24,7 @@ GUI перед запуском удаления через CLI.
 его можно через `--timezone`. Пример:
 
 ```bash
-.venv/bin/vk-cleaner-cli scan --all --date-from 2024-01-01 --date-to 2024-12-31 --timezone Europe/Moscow
+.venv/bin/vk-profile-cleaner-cli scan --all --date-from 2024-01-01 --date-to 2024-12-31 --timezone Europe/Moscow
 ```
 
 `scan` всегда только анализирует и сохраняет задание, даже без `--dry-run`.
@@ -36,8 +36,8 @@ GUI перед запуском удаления через CLI.
 Подставьте ID задания и digest из результата анализа:
 
 ```bash
-.venv/bin/vk-cleaner-cli run --job-id ID --confirm DIGEST
-.venv/bin/vk-cleaner-cli resume --job-id ID --confirm DIGEST
+.venv/bin/vk-profile-cleaner-cli run --job-id ID --confirm DIGEST
+.venv/bin/vk-profile-cleaner-cli resume --job-id ID --confirm DIGEST
 ```
 
 Эти команды удаляют сообщения для всех. Владелец токена должен совпадать
@@ -48,8 +48,8 @@ GUI перед запуском удаления через CLI.
 ## Отчёт и CSV
 
 ```bash
-.venv/bin/vk-cleaner-cli report --job-id ID
-.venv/bin/vk-cleaner-cli export --job-id ID --output messages.csv
+.venv/bin/vk-profile-cleaner-cli report --job-id ID
+.venv/bin/vk-profile-cleaner-cli export --job-id ID --output messages.csv
 ```
 
 Отчёт содержит счётчики состояний: `confirmed` — подтверждено API, `failed` —
@@ -63,7 +63,7 @@ CSV содержит `peer_id, peer_name, message_id, date, text_snippet, cmid`.
 Используйте отдельную базу, чтобы не смешивать тестовые данные с реальными:
 
 ```bash
-.venv/bin/vk-cleaner-cli --demo --database /tmp/vk-cleaner-demo.sqlite3 scan --all --date-from 2020-01-01 --date-to 2030-12-31
+.venv/bin/vk-profile-cleaner-cli --demo --database /tmp/vk-profile-cleaner-demo.sqlite3 scan --all --date-from 2020-01-01 --date-to 2030-12-31
 ```
 
 Для последующих команд задавайте те же `--demo --database` перед именем команды.
@@ -79,3 +79,25 @@ CSV содержит `peer_id, peer_name, message_id, date, text_snippet, cmid`.
 ```bash
 python3 tools/vk_probe.py --peer-id 123456
 ```
+
+## Переход с VK Cleaner
+
+Если осталась база прежней версии, выполните импорт до первого анализа:
+
+```bash
+.venv/bin/vk-profile-cleaner-cli migrate-data
+```
+
+Команда копирует задания из каталога `vk-cleaner` в `vk-profile-cleaner`, сохраняет
+прежнюю базу и отказывается перезаписывать новую. Если существуют обе базы,
+автоматического объединения нет. После импорта используйте только новую программу,
+чтобы не исполнять копии одного задания из двух баз.
+
+Для переноса сохранённого токена через системное хранилище:
+
+```bash
+.venv/bin/vk-profile-cleaner-cli migrate-token
+```
+
+Прежний ключ удаляется после проверки новой записи. Уже сохранённый новый токен
+не перезаписывается. В GUI эти действия доступны в меню «Файл».

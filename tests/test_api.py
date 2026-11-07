@@ -2,8 +2,8 @@ import threading
 import unittest
 from unittest.mock import Mock, patch
 import requests
-from vk_cleaner.core.api import ApiClient
-from vk_cleaner.core.models import CleanerError, Cancelled
+from vk_profile_cleaner.core.api import ApiClient
+from vk_profile_cleaner.core.models import CleanerError, Cancelled
 
 
 class ApiTests(unittest.TestCase):

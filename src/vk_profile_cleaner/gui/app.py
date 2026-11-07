@@ -16,6 +16,8 @@ from ..core.demo import DemoApi
 from ..core.models import DateRange, CleanerError
 from ..core import services
 from ..storage.database import Database
+from ..identity import APP_NAME, APP_ID, TOKEN_ACCOUNT, database_path, legacy_database_path
+from ..storage.legacy import migrate_database, migrate_token
 
 
 class PasswordStyle(QProxyStyle):
@@ -103,19 +105,22 @@ class Table(QAbstractTableModel):
 class Window(QMainWindow):
     def __init__(self, demo=False):
         super().__init__()
-        self.setWindowTitle('VK Cleaner — мастер очистки' + (' [ДЕМОНСТРАЦИЯ]' if demo else ''))
+        self.setWindowTitle('VK Profile Cleaner — мастер очистки' + (' [ДЕМОНСТРАЦИЯ]' if demo else ''))
         self.resize(1120, 780)
         self.setMinimumSize(980, 700)
         file_menu = self.menuBar().addMenu('&Файл')
+        file_menu.addAction('Импорт прежней базы…', self.import_database)
+        file_menu.addAction('Импорт прежнего токена…', self.import_token)
+        file_menu.addSeparator()
         file_menu.addAction('Выйти из аккаунта', self.logout)
         file_menu.addSeparator()
         file_menu.addAction('Закрыть', self.close)
         help_menu = self.menuBar().addMenu('&Справка')
-        help_menu.addAction('О программе', lambda: QMessageBox.information(self, 'VK Cleaner', 'VK Cleaner\nЛокальная очистка своих сообщений ВКонтакте.\nРанняя версия · GNU GPL v3'))
+        help_menu.addAction('О программе', lambda: QMessageBox.information(self, 'VK Profile Cleaner', 'VK Profile Cleaner\nЛокальная очистка своих сообщений ВКонтакте.\nРанняя версия · GNU GPL v3'))
         self.statusBar().showMessage('Готово' + (' · Демонстрационный режим' if demo else ''))
         self.demo = demo
         self.temp = tempfile.TemporaryDirectory() if demo else None
-        self.path = Path(self.temp.name if demo else user_data_path('vk-cleaner')) / 'cleaner.sqlite3'
+        self.path = Path(self.temp.name) / 'cleaner.sqlite3' if demo else database_path()
         self.pool = QThreadPool(self)
         self.busy = False
         self.api = None
@@ -124,7 +129,7 @@ class Window(QMainWindow):
         panel = QWidget()
         self.setCentralWidget(panel)
         layout = QVBoxLayout(panel)
-        mast = QLabel('VK Cleaner')
+        mast = QLabel('VK Profile Cleaner')
         mast.setObjectName('mast')
         layout.setContentsMargins(8, 8, 8, 8)
         layout.setSpacing(6)
@@ -227,7 +232,7 @@ class Window(QMainWindow):
         layout.addWidget(self.cancel)
         self.set_table(['Диалог', 'peer_id'], [])
         self.controls()
-        self.logger = logging.getLogger('vk-cleaner.' + str(id(self)))
+        self.logger = logging.getLogger('vk-profile-cleaner.' + str(id(self)))
         if not demo:
             logpath = self.path.parent / 'logs'
             logpath.mkdir(parents=True, exist_ok=True, mode=0o700)
@@ -235,6 +240,8 @@ class Window(QMainWindow):
             handler.setFormatter(logging.Formatter('%(asctime)s %(message)s'))
             self.logger.addHandler(handler)
             self.logger.setLevel(logging.INFO)
+            if legacy_database_path().is_file() and not self.path.exists():
+                self.log.appendPlainText('Найдена прежняя база. Файл → Импорт прежней базы. Выполните импорт до первого анализа.')
 
     def controls(self):
         for widget in (self.login, self.next, self.resume, self.all_button, self.none_button):
@@ -338,7 +345,7 @@ class Window(QMainWindow):
             if remember and not self.demo:
                 try:
                     import keyring
-                    keyring.set_password('vk-cleaner', 'token', token)
+                    keyring.set_password(APP_ID, TOKEN_ACCOUNT, token)
                 except Exception:
                     emit('Токен не сохранён: системное хранилище недоступно.')
             return account, peers
@@ -470,7 +477,7 @@ class Window(QMainWindow):
         def task(emit):
             try:
                 import keyring
-                token = keyring.get_password('vk-cleaner', 'token')
+                token = keyring.get_password(APP_ID, TOKEN_ACCOUNT)
                 if not token:
                     raise ValueError()
                 return token
@@ -481,11 +488,37 @@ class Window(QMainWindow):
             self.authenticate()
         self.work(task, done)
 
+    def import_database(self):
+        if self.busy or self.demo:
+            return
+        if QMessageBox.question(self, 'Импорт базы',
+                'Скопировать задания из прежнего VK Cleaner?\n'
+                'Прежняя база останется на месте. После импорта используйте только новую программу.\n'
+                'Существующая новая база не будет перезаписана.') != QMessageBox.Yes:
+            return
+        self.work(lambda _: migrate_database(legacy_database_path(), self.path),
+                  lambda _: self.log.appendPlainText('Прежние задания импортированы.'))
+
+    def import_token(self):
+        if self.busy or self.demo:
+            return
+        if QMessageBox.question(self, 'Импорт токена',
+                'Перенести токен прежнего VK Cleaner через системное хранилище?\n'
+                'После проверки записи прежний ключ будет удалён.') != QMessageBox.Yes:
+            return
+        def task(emit):
+            try:
+                import keyring
+            except ImportError:
+                raise CleanerError('Установите поддержку системного хранилища.') from None
+            migrate_token(keyring, remove_old=True)
+        self.work(task, lambda _: self.log.appendPlainText('Токен перенесён. Можно войти сохранённым токеном.'))
+
     def forget_token(self):
         def task(emit):
             try:
                 import keyring
-                keyring.delete_password('vk-cleaner', 'token')
+                keyring.delete_password(APP_ID, TOKEN_ACCOUNT)
             except Exception:
                 raise CleanerError('Не удалось удалить токен или он не был сохранён.') from None
         self.work(task, lambda _: self.log.appendPlainText('Сохранённый токен удалён.'))

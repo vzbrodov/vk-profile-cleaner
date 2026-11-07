@@ -2,7 +2,7 @@
 requires = ["setuptools>=68"]
 build-backend = "setuptools.build_meta"
 [project]
-name = "vk-cleaner"
+name = "vk-profile-cleaner"
 version = "0.1.0"
 description = "Локальная очистка своих сообщений ВКонтакте"
 requires-python = ">=3.11"
@@ -12,8 +12,8 @@ keyring = ["keyring>=25"]
 dev = ["pytest>=8", "pytest-qt>=4"]
 bundle = ["pyinstaller>=6.20,<7"]
 [project.scripts]
-vk-cleaner = "vk_cleaner.gui.app:main"
-vk-cleaner-cli = "vk_cleaner.cli:main"
+vk-profile-cleaner = "vk_profile_cleaner.gui.app:main"
+vk-profile-cleaner-cli = "vk_profile_cleaner.cli:main"
 [tool.setuptools.packages.find]
 where = ["src"]
 [tool.pytest.ini_options]

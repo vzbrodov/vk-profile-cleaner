@@ -2,11 +2,11 @@ from datetime import date
 from pathlib import Path
 import tempfile
 import unittest
-from vk_cleaner.core.models import DateRange, CleanerError
-from vk_cleaner.core.demo import DemoApi
-from vk_cleaner.core.services import scan, delete, parse_delete, export_csv
-from vk_cleaner.storage.database import Database
-from vk_cleaner.core.models import Dialog
+from vk_profile_cleaner.core.models import DateRange, CleanerError
+from vk_profile_cleaner.core.demo import DemoApi
+from vk_profile_cleaner.core.services import scan, delete, parse_delete, export_csv
+from vk_profile_cleaner.storage.database import Database
+from vk_profile_cleaner.core.models import Dialog
 
 
 class CoreTests(unittest.TestCase):

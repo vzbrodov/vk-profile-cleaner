@@ -1,6 +1,6 @@
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QMessageBox
-from vk_cleaner.gui.app import Window, apply_theme
+from vk_profile_cleaner.gui.app import Window, apply_theme
 
 
 def test_demo_flow(qtbot, monkeypatch):

@@ -8,13 +8,17 @@ from .core.demo import DemoApi
 from .core.models import DateRange, CleanerError
 from .core import services
 from .storage.database import Database
+from .identity import database_path, legacy_database_path
+from .storage.legacy import migrate_database, migrate_token
 
 
 def main():
     parser = argparse.ArgumentParser(description='Локальная очистка сообщений VK')
-    parser.add_argument('--database', type=Path, default=user_data_path('vk-cleaner') / 'cleaner.sqlite3')
+    parser.add_argument('--database', type=Path, default=database_path())
     parser.add_argument('--demo', action='store_true')
     sub = parser.add_subparsers(dest='command', required=True)
+    sub.add_parser('migrate-data', help='Импорт прежней базы без перезаписи новой')
+    sub.add_parser('migrate-token', help='Перенос прежнего токена через keyring')
     scan = sub.add_parser('scan')
     scan.add_argument('--date-from', type=date.fromisoformat, required=True)
     scan.add_argument('--date-to', type=date.fromisoformat, required=True)
@@ -31,8 +35,26 @@ def main():
         if name == 'export':
             cmd.add_argument('--output', required=True)
     args = parser.parse_args()
-    if args.demo and args.database == user_data_path('vk-cleaner') / 'cleaner.sqlite3':
+    if args.demo and args.database == database_path():
         parser.error('Для demo укажите отдельную --database.')
+    if args.command in ('migrate-data', 'migrate-token'):
+        try:
+            if args.demo:
+                raise CleanerError('Импорт недоступен в demo.')
+            if args.command == 'migrate-data':
+                migrate_database(legacy_database_path(), args.database)
+                print('Задания скопированы. Старую программу больше не запускайте.')
+            else:
+                import keyring
+                migrate_token(keyring, remove_old=True)
+                print('Токен перенесён через системное хранилище.')
+            return 0
+        except (CleanerError, ImportError) as exc:
+            print(str(exc) if isinstance(exc, CleanerError) else 'Системное хранилище недоступно.')
+            return 1
+    if args.database == database_path() and legacy_database_path().is_file() and not args.database.exists():
+        print('Найдена прежняя база. Сначала выполните migrate-data либо выберите другую --database.')
+        return 1
     store = Database(args.database)
     try:
         if args.command in ('report', 'export'):

@@ -1,5 +1,5 @@
 from PySide6.QtCore import QTimer
-from vk_cleaner.gui.app import Window
+from vk_profile_cleaner.gui.app import Window
 
 
 def test_large_search_runs_in_background(qtbot):

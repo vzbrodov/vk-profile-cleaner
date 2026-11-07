@@ -7,11 +7,14 @@ from pathlib import Path
 import sqlite3
 import uuid
 from ..core.models import CleanerError
+from ..identity import database_path, legacy_database_path
 
 
 class Database:
     def __init__(self, path):
         self.path = Path(path)
+        if self.path == database_path() and not self.path.exists() and legacy_database_path().is_file():
+            raise CleanerError('Найдена прежняя база. Сначала импортируйте её через меню Файл.')
         self.path.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
         if self.path.exists() and self.path.is_symlink():
             raise CleanerError('База не может быть символической ссылкой.')
