@@ -1,0 +1,30 @@
+# Локальные планы и настройки помощников
+/PROJECT_PLAN.local.md
+/.agents/
+/.codex/
+/.aws/
+
+# Python и сборка
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
+.ruff_cache/
+build/
+dist/
+*.egg-info/
+
+# Личные данные приложения
+.env
+.env.*
+!.env.example
+/runtime/
+/logs/
+/exports/
+/state.json
+*.log
+/SPEC.local.md
+/HANDOFF.local.md
+*.sqlite3
+*.sqlite3-journal
+*.sqlite3.lock
