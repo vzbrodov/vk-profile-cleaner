@@ -5,7 +5,7 @@
 диалог, `messages.getHistory`. Сообщения не удаляются и не помечаются прочитанными.
 
 ```bash
-python3 -m unittest discover -s tests -v
+python3 -m unittest discover -s tests -p 'test_vk_probe.py' -v
 python3 tools/vk_probe.py
 python3 tools/vk_probe.py --peer-id 123456
 ```
