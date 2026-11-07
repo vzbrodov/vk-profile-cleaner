@@ -106,6 +106,13 @@ class Window(QMainWindow):
         self.setWindowTitle('VK Cleaner — мастер очистки' + (' [ДЕМОНСТРАЦИЯ]' if demo else ''))
         self.resize(1120, 780)
         self.setMinimumSize(980, 700)
+        file_menu = self.menuBar().addMenu('&Файл')
+        file_menu.addAction('Выйти из аккаунта', self.logout)
+        file_menu.addSeparator()
+        file_menu.addAction('Закрыть', self.close)
+        help_menu = self.menuBar().addMenu('&Справка')
+        help_menu.addAction('О программе', lambda: QMessageBox.information(self, 'VK Cleaner', 'VK Cleaner\nЛокальная очистка своих сообщений ВКонтакте.\nРанняя версия · GNU GPL v3'))
+        self.statusBar().showMessage('Готово' + (' · Демонстрационный режим' if demo else ''))
         self.demo = demo
         self.temp = tempfile.TemporaryDirectory() if demo else None
         self.path = Path(self.temp.name if demo else user_data_path('vk-cleaner')) / 'cleaner.sqlite3'
@@ -119,8 +126,8 @@ class Window(QMainWindow):
         layout = QVBoxLayout(panel)
         mast = QLabel('VK Cleaner')
         mast.setObjectName('mast')
-        layout.setContentsMargins(18, 14, 18, 14)
-        layout.setSpacing(10)
+        layout.setContentsMargins(8, 8, 8, 8)
+        layout.setSpacing(6)
         layout.addWidget(mast)
         subtitle = QLabel('Очистка своих сообщений · локально на вашем компьютере')
         subtitle.setObjectName('subtitle')
@@ -511,26 +518,26 @@ def main():
 def apply_theme(app):
     app.setStyle('Fusion')
     app.setStyleSheet("""
-    QWidget { font-family: "DejaVu Sans"; font-size: 12px; color: #243446; }
-    QMainWindow { background: #e7e8e4; }
-    QLabel#mast { color: #294b69; font-size: 24px; font-weight: bold; }
-    QLabel#subtitle { color: #526476; padding-bottom: 4px; }
-    QGroupBox { background: #eff0ec; border: 1px solid #a7b2b8; margin-top: 10px; padding: 12px 10px 8px; }
-    QGroupBox::title { subcontrol-origin: margin; left: 12px; padding: 0 5px; color: #355774; }
-    QPushButton { background: #e9ecec; border: 1px solid #8d9ca5; border-top: 1px solid white; border-left: 1px solid white; padding: 7px 10px; min-height: 16px; }
-    QPushButton:hover { background: #f4f7f8; border-color: #587b96; }
-    QPushButton:pressed { background: #ccd7dd; border: 1px solid #587b96; }
-    QPushButton:focus { outline: 1px dotted #294b69; }
-    QPushButton#primary { background: #355e7c; color: white; border: 1px solid #26465f; font-weight: bold; }
-    QPushButton#primary:hover { background: #426f90; }
-    QPushButton:disabled, QPushButton#primary:disabled { background: #e2e5e3; color: #818a8c; border-color: #bac1c2; }
-    QLineEdit, QDateEdit { background: #fff; border: 1px solid #97a8b2; padding: 5px; min-height: 18px; }
-    QLineEdit:focus, QDateEdit:focus { border: 1px solid #355e7c; }
-    QPlainTextEdit { background: #f5f7f3; border: 1px solid #a3b0b6; font-family: "DejaVu Sans Mono"; font-size: 11px; }
-    QTableView { background: #fff; alternate-background-color: #f0f4f6; gridline-color: #d6dfe3; border: 1px solid #97a8b2; selection-background-color: #355e7c; selection-color: white; }
-    QHeaderView::section { background: #dce4e9; border: 0; border-right: 1px solid #bccbd3; border-bottom: 1px solid #a6bac6; padding: 8px; color: #294b69; }
-    QProgressBar { background: #f5f7f3; border: 1px solid #a3b0b6; height: 16px; text-align: center; }
-    QProgressBar::chunk { background: #89a3b5; }
+    QWidget { font-family: "DejaVu Sans"; font-size: 12px; color: #000; }
+    QMainWindow, QMenuBar, QStatusBar { background: #c0c0c0; }
+    QLabel#mast { background: #000080; color: white; font-size: 14px; font-weight: bold; padding: 4px 7px; }
+    QLabel#subtitle { color: #000; padding: 2px; }
+    QMenuBar::item:selected, QMenu::item:selected { background: #000080; color: white; }
+    QMenu { background: #c0c0c0; border: 2px outset #efefef; }
+    QGroupBox { background: #c0c0c0; border: 1px solid #808080; margin-top: 9px; padding: 10px 6px 5px; }
+    QGroupBox::title { subcontrol-origin: margin; left: 9px; padding: 0 3px; background: #c0c0c0; }
+    QPushButton { background: #c0c0c0; border-top: 2px solid #fff; border-left: 2px solid #fff; border-right: 2px solid #404040; border-bottom: 2px solid #404040; padding: 4px 8px; min-height: 16px; }
+    QPushButton:pressed { border-top: 2px solid #404040; border-left: 2px solid #404040; border-right: 2px solid #fff; border-bottom: 2px solid #fff; }
+    QPushButton:focus { outline: 1px dotted #000; }
+    QPushButton#primary { font-weight: bold; }
+    QPushButton:disabled { color: #808080; }
+    QLineEdit, QDateEdit, QPlainTextEdit { background: #fff; border-top: 2px solid #808080; border-left: 2px solid #808080; border-right: 2px solid white; border-bottom: 2px solid white; padding: 3px; min-height: 18px; }
+    QPlainTextEdit { font-family: "DejaVu Sans Mono"; font-size: 11px; }
+    QTableView { background: white; alternate-background-color: white; gridline-color: #c0c0c0; border: 2px inset #808080; selection-background-color: #000080; selection-color: white; }
+    QHeaderView::section { background: #c0c0c0; border-top: 1px solid white; border-left: 1px solid white; border-right: 1px solid #404040; border-bottom: 1px solid #404040; padding: 4px; }
+    QProgressBar { background: #c0c0c0; border: 2px inset #808080; height: 14px; text-align: center; }
+    QProgressBar::chunk { background: #000080; width: 8px; margin: 1px; }
+    QStatusBar::item { border: 1px inset #808080; }
     """)
 
 
