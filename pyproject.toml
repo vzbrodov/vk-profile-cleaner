@@ -1,0 +1,19 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+[project]
+name = "vk-cleaner"
+version = "0.1.0"
+description = "Локальная очистка своих сообщений ВКонтакте"
+requires-python = ">=3.11"
+dependencies = ["PySide6>=6.7,<7", "requests>=2.32,<3", "platformdirs>=4,<5"]
+[project.optional-dependencies]
+keyring = ["keyring>=25"]
+dev = ["pytest>=8", "pytest-qt>=4"]
+[project.scripts]
+vk-cleaner = "vk_cleaner.gui.app:main"
+vk-cleaner-cli = "vk_cleaner.cli:main"
+[tool.setuptools.packages.find]
+where = ["src"]
+[tool.pytest.ini_options]
+pythonpath = [".", "src"]
